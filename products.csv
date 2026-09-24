@@ -1,0 +1,13 @@
+article,name,price,manufacturer,category,material,pickup_type,strings_count,fret_count,color
+FEN-STRAT-MN,Fender Player Stratocaster MN,89990,Fender,Электрогитара,Alder / maple,HSS,6,22,Sunburst
+GIB-LES-STD,Gibson Les Paul Standard 50s,239990,Gibson,Электрогитара,Mahogany / maple,HH,6,22,Heritage Cherry
+YAM-PAC-112,Yamaha PAC112V,44990,Yamaha,Электрогитара,Alder,HSS,6,22,Black
+IBA-RG550,Ibanez RG550 Genesis,129990,Ibanez,Электрогитара,Basswood / maple,HSH,6,24,Purple
+COR-ACT-1,Cort Action Bass Plus,37990,Cort,Бас-гитара,Agathis / maple,PJ,4,24,Black
+EPI-DR500,Epiphone DR-500MCE,45990,Epiphone,Акустическая гитара,Solid spruce / mahogany,—,6,20,Natural
+FEN-FA-125,Fender FA-125,21990,Fender,Акустическая гитара,Spruce / nato,—,6,20,Natural
+YAM-C40,Yamaha C40,14990,Yamaha,Классическая гитара,Spruce / meranti,—,6,18,Natural
+GIB-G345,Gibson G-45 Studio,99990,Gibson,Акустическая гитара,Sitka spruce / walnut,—,6,20,Natural
+IBA-ART120,Ibanez Artwood AW120,33990,Ibanez,Акустическая гитара,Spruce / mahogany,—,6,20,Natural
+COR-X100,Cort X100,27990,Cort,Электрогитара,Basswood / maple,H-H,6,24,Black
+EPI-LPC,Epiphone Les Paul Custom,119990,Epiphone,Электрогитара,Mahogany / ebony,HH,6,22,Ebony

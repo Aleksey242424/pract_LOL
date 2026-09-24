@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление товарами — Guitar Store</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="user-bar">
+    <div>🎸 <b>Guitar Store</b> | {{ user.fio }} <span class="role">{{ user.role }}</span></div>
+    <div><a href="/">← На главную</a> | <a href="/logout">Выйти</a></div>
+</div>
+
+<div class="container">
+
+    <div class="left-panel">
+        <h2>Управление товаром</h2>
+
+        <form id="productForm">
+            <label>Артикул</label>
+            <input type="text" id="article" required>
+
+            <label>Наименование</label>
+            <input type="text" id="name" required>
+
+            <label>Цена</label>
+            <input type="number" id="price" step="0.01" min="0" required>
+
+            <label>Производитель</label>
+            <select id="manufacturer_id" required>
+                {% for m in manufacturers %}
+                <option value="{{ m.id_manufacturer }}">{{ m.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Категория</label>
+            <select id="category_id" required>
+                {% for c in categories %}
+                <option value="{{ c.id_category }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Материал</label>
+            <input type="text" id="material">
+
+            <label>Тип звукоснимателей</label>
+            <input type="text" id="pickup_type">
+
+            <label>Кол-во струн</label>
+            <input type="number" id="strings_count">
+
+            <label>Кол-во ладов</label>
+            <input type="number" id="fret_count">
+
+            <label>Цвет</label>
+            <input type="text" id="color">
+
+            <input type="hidden" id="editing_id" value="">
+
+            <div class="buttons">
+                <button type="button" class="btn-add" onclick="addProduct()">Добавить</button>
+                <button type="button" class="btn-edit" onclick="updateProduct()">Изменить</button>
+                {% if is_admin %}
+                <button type="button" class="btn-del" onclick="deleteProduct()">Удалить</button>
+                {% endif %}
+                <button type="button" class="btn-clear" onclick="clearForm()">Очистить</button>
+            </div>
+        </form>
+
+        <div class="status" id="statusMsg"></div>
+    </div>
+
+    <div class="right-panel">
+        <h2>Товары в базе</h2>
+        <table id="productsTable">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Артикул</th><th>Название</th><th>Цена</th><th>Цвет</th>
+                </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+async function loadProducts() {
+    const res = await fetch('/api/products', {
+    credentials: 'include',  // ← добавь эту строку
+    });
+    if (!res.ok) {
+        document.getElementById('productsBody').innerHTML =
+            '<tr><td colspan="5" style="color:red">Ошибка загрузки</td></tr>';
+        return;
+    }
+    const products = await res.json();
+    const tbody = document.getElementById('productsBody');
+    tbody.innerHTML = '';
+    products.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${p.id_product}</td>
+            <td>${p.article}</td>
+            <td>${p.name}</td>
+            <td>${p.price}</td>
+            <td>${p.color ?? '—'}</td>
+        `;
+        row.onclick = () => {
+            document.querySelectorAll('#productsBody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            fillForm(p);
+        };
+        tbody.appendChild(row);
+    });
+}
+
+function fillForm(p) {
+    document.getElementById('article').value = p.article;
+    document.getElementById('name').value = p.name;
+    document.getElementById('price').value = p.price;
+    document.getElementById('manufacturer_id').value = p.manufacturer_id;
+    document.getElementById('category_id').value = p.category_id;
+    document.getElementById('material').value = p.material ?? '';
+    document.getElementById('pickup_type').value = p.pickup_type ?? '';
+    document.getElementById('strings_count').value = p.strings_count ?? '';
+    document.getElementById('fret_count').value = p.fret_count ?? '';
+    document.getElementById('color').value = p.color ?? '';
+    document.getElementById('editing_id').value = p.id_product;
+    setStatus(`Выбран ID=${p.id_product}`, 'info');
+}
+
+function collectForm() {
+    return {
+        article: document.getElementById('article').value,
+        name: document.getElementById('name').value,
+        price: parseFloat(document.getElementById('price').value),
+        manufacturer_id: parseInt(document.getElementById('manufacturer_id').value),
+        category_id: parseInt(document.getElementById('category_id').value),
+        material: document.getElementById('material').value || null,
+        pickup_type: document.getElementById('pickup_type').value || null,
+        strings_count: parseInt(document.getElementById('strings_count').value) || null,
+        fret_count: parseInt(document.getElementById('fret_count').value) || null,
+        color: document.getElementById('color').value || null,
+    };
+}
+
+async function addProduct() {
+    const data = collectForm();
+    const res = await fetch('/api/products', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        setStatus('✅ Товар добавлен', 'ok');
+        clearForm();
+        loadProducts();
+    } else {
+        const err = await res.json();
+        setStatus('❌ ' + (err.detail || 'Ошибка добавления'), 'err');
+    }
+}
+
+async function updateProduct() {
+    const id = document.getElementById('editing_id').value;
+    if (!id) return setStatus('Сначала выбери товар из таблицы', 'err');
+    const data = collectForm();
+    const res = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        setStatus('✅ Данные обновлены', 'ok');
+        clearForm();
+        loadProducts();
+    } else {
+        const err = await res.json();
+        setStatus('❌ ' + (err.detail || 'Ошибка обновления'), 'err');
+    }
+}
+
+async function deleteProduct() {
+    const id = document.getElementById('editing_id').value;
+    if (!id) return setStatus('Сначала выбери товар из таблицы', 'err');
+    if (!confirm('Удалить товар ID=' + id + '?')) return;
+    const res = await fetch(`/api/products/${id}`, { credentials: 'include',method: 'DELETE' });
+    if (res.ok) {
+        setStatus('🗑️ Товар удалён', 'ok');
+        clearForm();
+        loadProducts();
+    } else {
+        const err = await res.json();
+        setStatus('❌ ' + (err.detail || 'Ошибка удаления'), 'err');
+    }
+}
+
+function clearForm() {
+    document.getElementById('productForm').reset();
+    document.getElementById('editing_id').value = '';
+    document.querySelectorAll('#productsBody tr').forEach(r => r.classList.remove('selected'));
+    setStatus('', 'info');
+}
+
+function setStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+}
+
+loadProducts();
+</script>
+
+</body>
+</html>

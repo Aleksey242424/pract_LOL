@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация — Guitar Store</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="auth-container">
+    <h1>🎸 Guitar Store</h1>
+    <h2>Регистрация</h2>
+
+    {% if error %}
+    <div class="status err">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/register">
+        <label>ФИО</label>
+        <input type="text" name="fio" required>
+
+        <label>Логин</label>
+        <input type="text" name="login" required>
+
+        <label>Пароль</label>
+        <input type="password" name="password" required minlength="4">
+
+        <button type="submit" class="btn-add" style="margin-top:20px;width:100%">Зарегистрироваться</button>
+    </form>
+
+    <p style="text-align:center;margin-top:20px">
+        Уже есть аккаунт? <a href="/login">Войти</a>
+    </p>
+</div>
+
+</body>
+</html>
