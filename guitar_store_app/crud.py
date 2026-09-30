@@ -4,6 +4,7 @@ from models import Product, Customer, Order, OrderItem,User
 import schemas
 from auth import hash_password, verify_password
 from datetime import date
+from models import Warehouse, WarehouseStock, Product
 
 
 # ---------- PRODUCTS ----------
@@ -205,3 +206,103 @@ def get_orders_for_user(db: Session, user: User):
         .order_by(Order.order_date.desc())
         .all()
     )
+
+def get_orders_with_totals(db: Session):
+    """
+    Возвращает список заказов с ФИО клиента и итоговой суммой.
+    Используется на странице /orders и в отчёте.
+    """
+    rows = (
+        db.query(
+            Order.id_order,
+            Order.order_number,
+            Customer.fio.label("customer_name"),
+            Order.order_date,
+            Order.status,
+            func.coalesce(func.sum(OrderItem.quantity * OrderItem.price), 0).label("total"),
+        )
+        .join(Customer, Customer.id_customer == Order.customer_id)
+        .outerjoin(OrderItem, OrderItem.order_id == Order.id_order)
+        .group_by(Order.id_order, Customer.fio)
+        .order_by(Order.order_date.desc(), Order.id_order.desc())
+        .all()
+    )
+    return [
+        {
+            "id_order": r.id_order,
+            "order_number": r.order_number,
+            "customer_name": r.customer_name,
+            "order_date": r.order_date,
+            "status": r.status,
+            "total": float(r.total),
+        }
+        for r in rows
+    ]
+
+def get_warehouse_stock(db: Session):
+    """
+    Возвращает список остатков: склад, товар, артикул, количество.
+    Используется на странице /warehouses.
+    """
+    rows = (
+        db.query(
+            Warehouse.id_warehouse,
+            Warehouse.name.label("warehouse_name"),
+            Warehouse.address.label("warehouse_address"),
+            Product.id_product,
+            Product.article,
+            Product.name.label("product_name"),
+            Product.price,
+            WarehouseStock.quantity,
+        )
+        .join(WarehouseStock, WarehouseStock.warehouse_id == Warehouse.id_warehouse)
+        .join(Product, Product.id_product == WarehouseStock.product_id)
+        .order_by(Warehouse.name, Product.name)
+        .all()
+    )
+    return [
+        {
+            "id_warehouse": r.id_warehouse,
+            "warehouse_name": r.warehouse_name,
+            "warehouse_address": r.warehouse_address,
+            "id_product": r.id_product,
+            "article": r.article,
+            "product_name": r.product_name,
+            "price": float(r.price),
+            "quantity": r.quantity,
+            "stock_value": float(r.price) * r.quantity,
+        }
+        for r in rows
+    ]
+
+
+def get_warehouses_summary(db: Session):
+    """
+    Сводка по складам: сколько позиций, сколько всего единиц, общая стоимость.
+    """
+    rows = (
+        db.query(
+            Warehouse.id_warehouse,
+            Warehouse.name,
+            Warehouse.address,
+            func.count(WarehouseStock.product_id).label("positions"),
+            func.coalesce(func.sum(WarehouseStock.quantity), 0).label("total_units"),
+            func.coalesce(func.sum(WarehouseStock.quantity * Product.price), 0).label("total_value"),
+        )
+        .outerjoin(WarehouseStock, WarehouseStock.warehouse_id == Warehouse.id_warehouse)
+        .outerjoin(Product, Product.id_product == WarehouseStock.product_id)
+        .group_by(Warehouse.id_warehouse)
+        .order_by(Warehouse.name)
+        .all()
+    )
+    return [
+        {
+            "id_warehouse": r.id_warehouse,
+            "name": r.name,
+            "address": r.address,
+            "positions": r.positions,
+            "total_units": int(r.total_units),
+            "total_value": float(r.total_value),
+        }
+        for r in rows
+    ]

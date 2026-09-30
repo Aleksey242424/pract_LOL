@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from database import Base
 
 
+
 class Manufacturer(Base):
     __tablename__ = "manufacturers"
     id_manufacturer = Column(Integer, primary_key=True, index=True)
@@ -78,3 +79,21 @@ class User(Base):
     login = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False)  # client | manager | admin
+
+class Warehouse(Base):
+    __tablename__ = "warehouses"
+    id_warehouse = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    address = Column(String(200), nullable=False)
+
+    stock = relationship("WarehouseStock", back_populates="warehouse", cascade="all, delete-orphan")
+
+
+class WarehouseStock(Base):
+    __tablename__ = "warehouse_stock"
+    warehouse_id = Column(Integer, ForeignKey("warehouses.id_warehouse", ondelete="CASCADE"), primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.id_product", ondelete="CASCADE"), primary_key=True)
+    quantity = Column(Integer, nullable=False)
+
+    warehouse = relationship("Warehouse", back_populates="stock")
+    product = relationship("Product")

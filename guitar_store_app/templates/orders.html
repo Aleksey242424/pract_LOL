@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы — Guitar Store</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="user-bar">
+    <div>
+        🎸 <b>Guitar Store</b> |
+        {{ user.fio }} <span class="role">{{ user.role }}</span>
+    </div>
+    <div>
+        <a href="/">🏠 Каталог</a>
+        {% if can_manage %}<a href="/form">⚙️ Товары</a> <a href="/warehouses">🏬 Склады</a>{% endif %}
+        {% if is_admin %}<a href="/admin">👥 Пользователи</a> <a href="/warehouses">🏬 Склады</a>{% endif %}
+        <a href="/logout">Выйти</a>
+    </div>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;">
+
+    <h1 style="color:#333">📦 Обработка заказов</h1>
+    <p style="color:#666;margin-top:-10px">
+        Подтверждение поддержки процесса обработки заказов:
+        номер, клиент, дата, статус и сумма.
+    </p>
+
+    {% if orders %}
+    <table style="margin-top:20px;">
+        <thead>
+            <tr>
+                <th>№ заказа</th>
+                <th>Клиент</th>
+                <th>Дата заказа</th>
+                <th>Статус</th>
+                <th style="text-align:right">Сумма, SEK</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td><b>{{ o.order_number }}</b></td>
+                <td>{{ o.customer_name }}</td>
+                <td>{{ o.order_date }}</td>
+                <td>
+                    <span class="status-badge status-{{ o.status|replace(' ', '-')|lower }}">
+                        {{ o.status }}
+                    </span>
+                </td>
+                <td style="text-align:right;font-weight:600;color:#28a745">
+                    {{ "%.2f"|format(o.total) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" style="text-align:right;font-weight:700">Итого по всем заказам:</td>
+                <td style="text-align:right;font-weight:700;color:#007bff">
+                    {{ "%.2f"|format(grand_total) }} SEK
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div class="status info" style="margin-top:20px">Заказов пока нет</div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

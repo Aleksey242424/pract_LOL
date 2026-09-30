@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel as PydanticBaseModel
 
+from sqlalchemy import func
+
 import models
 import schemas
 import crud
@@ -426,3 +428,135 @@ def api_my_orders(
         }
         for o in orders
     ]
+
+@app.get("/api/orders/summary", tags=["orders"])
+def api_orders_summary(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_manager),
+):
+    """
+    Список заказов с номером, клиентом, датой, статусом и итоговой суммой.
+    Доступно manager/admin.
+    """
+    return crud.get_orders_with_totals(db)
+
+@app.get("/orders", response_class=HTMLResponse, tags=["pages"])
+def orders_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
+):
+    """
+    Страница со списком всех заказов.
+    Для manager/admin — все заказы.
+    Для client — только его собственные.
+    """
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    if current_user.role in ("manager", "admin"):
+        orders = crud.get_orders_with_totals(db)
+    else:
+        # Для клиента — только его заказы, тоже с суммой
+        customer = crud.get_customer_by_user(db, current_user.id_user)
+        if not customer:
+            orders = []
+        else:
+            raw = (
+                db.query(
+                    models.Order.id_order,
+                    models.Order.order_number,
+                    models.Customer.fio.label("customer_name"),
+                    models.Order.order_date,
+                    models.Order.status,
+                    func.coalesce(func.sum(models.OrderItem.quantity * models.OrderItem.price), 0).label("total"),
+                )
+                .join(models.Customer, models.Customer.id_customer == models.Order.customer_id)
+                .outerjoin(models.OrderItem, models.OrderItem.order_id == models.Order.id_order)
+                .filter(models.Order.customer_id == customer.id_customer)
+                .group_by(models.Order.id_order, models.Customer.fio)
+                .order_by(models.Order.order_date.desc())
+                .all()
+            )
+            orders = [
+                {
+                    "id_order": r.id_order,
+                    "order_number": r.order_number,
+                    "customer_name": r.customer_name,
+                    "order_date": r.order_date,
+                    "status": r.status,
+                    "total": float(r.total),
+                }
+                for r in raw
+            ]
+
+    # Итоговая сумма по всем показанным заказам — полезно для отчёта
+    grand_total = sum(o["total"] for o in orders)
+
+    return templates.TemplateResponse("orders.html", {
+        "request": request,
+        "user": current_user,
+        "orders": orders,
+        "grand_total": grand_total,
+        "can_manage": current_user.role in ("manager", "admin"),
+        "is_admin": current_user.role == "admin",
+    })
+
+# ============================================================
+# API — СКЛАДЫ И ОСТАТКИ
+# ============================================================
+
+@app.get("/api/warehouses", tags=["warehouses"])
+def api_warehouses(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_manager),
+):
+    """Сводка по складам: позиции, единицы, стоимость."""
+    return crud.get_warehouses_summary(db)
+
+
+@app.get("/api/warehouse-stock", tags=["warehouses"])
+def api_warehouse_stock(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_manager),
+):
+    """Детальный список: склад → товар → количество."""
+    return crud.get_warehouse_stock(db)
+
+
+# ============================================================
+# HTML — СКЛАДЫ И ОСТАТКИ
+# ============================================================
+
+@app.get("/warehouses", response_class=HTMLResponse, tags=["pages"])
+def warehouses_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
+):
+    """
+    Страница со списком складов и остатков товаров.
+    Доступно manager/admin.
+    """
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+    if current_user.role not in ("manager", "admin"):
+        raise HTTPException(status_code=403, detail="Доступ только для менеджеров и админов")
+
+    warehouses = crud.get_warehouses_summary(db)
+    stock = crud.get_warehouse_stock(db)
+
+    # Общая стоимость по всем складам
+    grand_value = sum(w["total_value"] for w in warehouses)
+    grand_units = sum(w["total_units"] for w in warehouses)
+
+    return templates.TemplateResponse("warehouses.html", {
+        "request": request,
+        "user": current_user,
+        "warehouses": warehouses,
+        "stock": stock,
+        "grand_value": grand_value,
+        "grand_units": grand_units,
+        "can_manage": True,
+        "is_admin": current_user.role == "admin",
+    })
