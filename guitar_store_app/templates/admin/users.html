@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Управление пользователями — Guitar Store{% endblock %}
+
+{% block content %}
+<h1>Управление пользователями</h1>
+
+<div class="card">
+    <h2>Всего: {{ users|length }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>ФИО и роль</th><th>Логин</th>
+                <th>Статус</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id_user }}</td>
+                <td>
+                    <form method="post" action="/admin/users/{{ u.id_user }}/update"
+                          style="display:flex;gap:6px;align-items:center">
+                        <input type="text" name="fio" value="{{ u.fio }}" required
+                               style="width:180px">
+                        <select name="role" style="width:130px">
+                            {% for r in ['client', 'manager', 'admin'] %}
+                            <option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-ghost btn-sm">Сохранить</button>
+                    </form>
+                </td>
+                <td>{{ u.login }}</td>
+                <td>
+                    {% if u.locked_until %}
+                        <span style="background:#ffe5e3;color:#b3261e;padding:3px 8px;border-radius:6px;font-size:12px">
+                            Заблокирован
+                        </span>
+                    {% else %}
+                        <span class="muted">Активен</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;white-space:nowrap">
+                    {% if u.locked_until %}
+                    <form method="post" action="/admin/users/{{ u.id_user }}/unlock" style="display:inline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Разблокировать</button>
+                    </form>
+                    {% endif %}
+                    {% if u.id_user != current_user.id_user %}
+                    <form method="post" action="/admin/users/{{ u.id_user }}/delete"
+                          style="display:inline"
+                          onsubmit="return confirm('Удалить пользователя «{{ u.login }}»?')">
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

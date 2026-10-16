@@ -18,6 +18,13 @@
         <a href="/orders">📦 Заказы</a>
         {% if is_admin %}<a href="/admin">👥 Пользователи</a>{% endif %}
         <a href="/logout">Выйти</a>
+        <nav>
+        <a href="{{ url_for('products_page') }}">Товары</a>
+        <a href="{{ url_for('cart_page') }}">Корзина</a>
+        {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_users_page') }}">Пользователи</a>
+        {% endif %}
+        </nav>
     </div>
 </div>
 

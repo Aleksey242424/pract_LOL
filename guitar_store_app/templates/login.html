@@ -1,34 +1,96 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Вход — Guitar Store</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Вход — Guitar Store{% endblock %}
 
-<div class="auth-container">
-    <h1>🎸 Guitar Store</h1>
-    <h2>Вход в систему</h2>
+{% block content %}
+<div class="card" style="max-width:420px;margin:0 auto">
+    <h1 style="font-size:22px">Вход в систему</h1>
 
-    {% if error %}
-    <div class="status err">{{ error }}</div>
-    {% endif %}
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
-    <form method="post" action="/login">
-        <label>Логин</label>
-        <input type="text" name="login" required autofocus>
+    <form method="post" action="/login" id="login-form">
+        <label for="login">Логин</label>
+        <input type="text" id="login" name="login" required autofocus>
 
-        <label>Пароль</label>
-        <input type="password" name="password" required>
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" required>
 
-        <button type="submit" class="btn-add" style="margin-top:20px;width:100%">Войти</button>
+        <label>Проверка: перетащите пазл на место</label>
+        <div id="captcha-box" style="position:relative;margin-top:6px;user-select:none;display:inline-block">
+            <img id="captcha-bg" style="display:block;border-radius:8px" src="">
+            <img id="captcha-thumb" style="position:absolute;left:0;top:0;pointer-events:none" src="">
+            <div id="captcha-mask" style="position:absolute;inset:0;background:rgba(0,0,0,.35);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;cursor:pointer">
+                Нажмите, чтобы загрузить CAPTCHA
+            </div>
+        </div>
+        <input type="range" id="captcha-slider" min="0" value="0" disabled
+               style="width:100%;margin-top:8px">
+
+        <input type="hidden" name="captcha_id" id="captcha_id">
+        <input type="hidden" name="captcha_x"  id="captcha_x" value="0">
+
+        <button type="submit" class="btn btn-primary" style="margin-top:20px;width:100%" id="submit-btn" disabled>
+            Войти
+        </button>
     </form>
 
-    <p style="text-align:center;margin-top:20px">
+    <p class="muted" style="margin-top:16px;text-align:center">
         Нет аккаунта? <a href="/register">Зарегистрироваться</a>
     </p>
 </div>
+{% endblock %}
 
-</body>
-</html>
+{% block scripts %}
+<script>
+(function () {
+    const bg      = document.getElementById('captcha-bg');
+    const thumb   = document.getElementById('captcha-thumb');
+    const mask    = document.getElementById('captcha-mask');
+    const slider  = document.getElementById('captcha-slider');
+    const fId     = document.getElementById('captcha_id');
+    const fX      = document.getElementById('captcha_x');
+    const btn     = document.getElementById('submit-btn');
+
+    async function loadCaptcha() {
+        mask.style.display = 'flex';
+        mask.textContent = 'Загрузка…';
+        try {
+            const r = await fetch('/api/captcha/challenge');
+            const data = await r.json();
+
+            const bgLoaded = new Promise(res => { bg.onload = res; bg.onerror = res; });
+            const thLoaded = new Promise(res => { thumb.onload = res; thumb.onerror = res; });
+
+            bg.src    = 'data:image/jpeg;base64,' + data.image_base64;
+            thumb.src = 'data:image/png;base64,'  + data.thumb_base64;
+            await Promise.all([bgLoaded, thLoaded]);
+
+            thumb.style.top  = (data.tile_y || 0) + 'px';
+            thumb.style.left = '0px';
+
+            const bgW = bg.naturalWidth   || bg.width;
+            const thW = thumb.naturalWidth || thumb.width;
+            slider.max = Math.max(0, bgW - thW);
+            slider.value = 0;
+            fX.value = 0;
+            fId.value = data.captcha_id;
+
+            slider.disabled = false;
+            btn.disabled = true;
+            mask.style.display = 'none';
+        } catch (e) {
+            mask.textContent = 'Ошибка загрузки. Кликните для повтора.';
+        }
+    }
+
+    mask.addEventListener('click', loadCaptcha);
+
+    slider.addEventListener('input', () => {
+        const x = parseInt(slider.value, 10);
+        thumb.style.left = x + 'px';
+        fX.value = x;
+    });
+
+    slider.addEventListener('change', () => { btn.disabled = false; });
+})();
+</script>
+{% endblock %}

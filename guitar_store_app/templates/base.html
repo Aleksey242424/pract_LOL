@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Guitar Store{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f7; color: #1d1d1f; min-height: 100vh;
+        }
+        nav {
+            background: #1d1d1f; color: #fff;
+            padding: 14px 32px; display: flex; align-items: center; gap: 24px;
+        }
+        nav a { color: #f5f5f7; text-decoration: none; font-size: 15px; }
+        nav a:hover { opacity: .7; }
+        nav .brand { font-weight: 700; font-size: 18px; margin-right: 12px; }
+        nav .spacer { flex: 1; }
+        nav .badge {
+            background: #ff3b30; color: #fff; font-size: 11px;
+            padding: 2px 7px; border-radius: 10px; margin-left: 4px;
+        }
+        main { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+        h1 { font-size: 28px; margin-bottom: 20px; }
+        h2 { font-size: 20px; margin-bottom: 14px; }
+        .card {
+            background: #fff; border-radius: 12px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px;
+        }
+        .btn {
+            display: inline-block; padding: 9px 18px; border-radius: 8px;
+            border: none; font-size: 14px; font-weight: 500; cursor: pointer;
+            text-decoration: none; transition: opacity .15s;
+        }
+        .btn:hover { opacity: .85; }
+        .btn-primary { background: #0071e3; color: #fff; }
+        .btn-danger  { background: #ff3b30; color: #fff; }
+        .btn-ghost   { background: #e8e8ed; color: #1d1d1f; }
+        .btn-sm      { padding: 6px 12px; font-size: 13px; }
+        input[type=text], input[type=password], input[type=number],
+        input[type=email], select, textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #d2d2d7;
+            border-radius: 8px; font-size: 14px; font-family: inherit;
+            background: #fff;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: #0071e3;
+        }
+        label {
+            display: block; font-size: 13px; color: #6e6e73;
+            margin-bottom: 6px; margin-top: 12px;
+        }
+        .alert {
+            padding: 12px 16px; border-radius: 8px; font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .alert-error   { background: #ffe5e3; color: #b3261e; }
+        .alert-success { background: #e3f8e6; color: #176b2c; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td {
+            text-align: left; padding: 10px 12px;
+            border-bottom: 1px solid #e8e8ed; vertical-align: middle;
+        }
+        th {
+            color: #6e6e73; font-weight: 500; font-size: 12px;
+            text-transform: uppercase; letter-spacing: .04em;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+        .price { font-weight: 600; font-size: 16px; }
+        .muted { color: #86868b; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="brand">🎸 Guitar Store</a>
+        <a href="/">Каталог</a>
+        <a href="/cart">Корзина{% if cart_count %}<span class="badge">{{ cart_count }}</span>{% endif %}</a>
+        <div class="spacer"></div>
+
+        {# ВАЖНО: используем именно current_user, не user #}
+        {% if current_user %}
+            <span class="muted" style="color:#c7c7cc">{{ current_user.fio }}</span>
+            {% if current_user.role in ('admin', 'manager') %}
+                <a href="/admin/products">Товары</a>
+                <a href="/admin/users">Пользователи</a>
+            {% endif %}
+            <a href="/logout">Выйти</a>
+        {% else %}
+            <a href="/login">Войти</a>
+            <a href="/register">Регистрация</a>
+        {% endif %}
+    </nav>
+
+    <main>{% block content %}{% endblock %}</main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

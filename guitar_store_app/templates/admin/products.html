@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Управление товарами — Guitar Store{% endblock %}
+
+{% block content %}
+<h1>Управление товарами</h1>
+
+<div class="card">
+    <h2>Добавить товар</h2>
+    <form method="post" action="/admin/products">
+        <div class="grid" style="grid-template-columns:1fr 2fr 1fr;gap:12px">
+            <div>
+                <label for="article">Артикул</label>
+                <input type="text" id="article" name="article" required maxlength="50">
+            </div>
+            <div>
+                <label for="name">Название</label>
+                <input type="text" id="name" name="name" required minlength="2" maxlength="200">
+            </div>
+            <div>
+                <label for="price">Цена, ₽</label>
+                <input type="number" id="price" name="price" required min="0.01" step="0.01">
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div>
+                <label for="manufacturer_id">Производитель</label>
+                <select id="manufacturer_id" name="manufacturer_id" required>
+                    {% for m in manufacturers %}
+                    <option value="{{ m.id_manufacturer }}">{{ m.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="category_id">Категория</label>
+                <select id="category_id" name="category_id" required>
+                    {% for c in categories %}
+                    <option value="{{ c.id_category }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="initial_stock">Начальный остаток</label>
+                <input type="number" id="initial_stock" name="initial_stock" value="0" min="0">
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div>
+                <label for="material">Материал</label>
+                <input type="text" id="material" name="material" maxlength="100">
+            </div>
+            <div>
+                <label for="pickup_type">Тип звукоснимателей</label>
+                <input type="text" id="pickup_type" name="pickup_type" maxlength="50">
+            </div>
+            <div>
+                <label for="color">Цвет</label>
+                <input type="text" id="color" name="color" maxlength="50">
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+                <label for="strings_count">Кол-во струн</label>
+                <input type="number" id="strings_count" name="strings_count" min="1" max="12">
+            </div>
+            <div>
+                <label for="fret_count">Кол-во ладов</label>
+                <input type="number" id="fret_count" name="fret_count" min="1" max="36">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top:16px">
+            Добавить
+        </button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Список товаров ({{ products|length }})</h2>
+    {% if products %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Артикул</th><th>Название</th>
+                <th>Произв.</th><th>Категория</th>
+                <th>Цена</th><th>Остаток</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td>{{ p.id_product }}</td>
+                <td>{{ p.article }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.manufacturer.name if p.manufacturer else "—" }}</td>
+                <td>{{ p.category.name if p.category else "—" }}</td>
+                <td>{{ "%.2f"|format(p.price) }} ₽</td>
+                <td>{{ stocks[p.id_product] }}</td>
+                <td style="text-align:right">
+                    <form method="post" action="/admin/products/{{ p.id_product }}/delete"
+                          onsubmit="return confirm('Удалить «{{ p.name }}»?')">
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="muted">Товаров пока нет.</p>
+    {% endif %}
+</div>
+{% endblock %}

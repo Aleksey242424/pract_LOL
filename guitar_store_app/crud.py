@@ -5,6 +5,38 @@ import schemas
 from auth import hash_password, verify_password
 from datetime import date
 from models import Warehouse, WarehouseStock, Product
+from fastapi import HTTPException
+
+from datetime import datetime, timezone, timedelta
+
+MAX_ATTEMPTS = 3
+LOCKOUT_MINUTES = 15
+
+def authenticate_user(db: Session, login: str, password: str):
+    user = get_user_by_login(db, login)
+    if not user:
+        return None
+
+    # Проверка блокировки
+    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=423,
+            detail=f"Аккаунт заблокирован до {user.locked_until}"
+        )
+
+    if not verify_password(password, user.password_hash):
+        user.failed_attempts += 1
+        if user.failed_attempts >= MAX_ATTEMPTS:
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)
+            user.failed_attempts = 0  # сброс счётчика после блокировки
+        db.commit()
+        return None
+
+    # Успешный вход — сброс счётчика
+    user.failed_attempts = 0
+    user.locked_until = None
+    db.commit()
+    return user
 
 
 # ---------- PRODUCTS ----------

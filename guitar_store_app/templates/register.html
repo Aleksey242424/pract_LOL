@@ -1,37 +1,29 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Регистрация — Guitar Store</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Регистрация — Guitar Store{% endblock %}
 
-<div class="auth-container">
-    <h1>🎸 Guitar Store</h1>
-    <h2>Регистрация</h2>
+{% block content %}
+<div class="card" style="max-width:420px;margin:0 auto">
+    <h1 style="font-size:22px">Регистрация</h1>
 
-    {% if error %}
-    <div class="status err">{{ error }}</div>
-    {% endif %}
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 
     <form method="post" action="/register">
-        <label>ФИО</label>
-        <input type="text" name="fio" required>
+        <label for="fio">ФИО</label>
+        <input type="text" id="fio" name="fio" required minlength="2" maxlength="100">
 
-        <label>Логин</label>
-        <input type="text" name="login" required>
+        <label for="login">Логин</label>
+        <input type="text" id="login" name="login" required minlength="3" maxlength="50" pattern="\S+">
 
-        <label>Пароль</label>
-        <input type="password" name="password" required minlength="4">
+        <label for="password">Пароль (мин. 4 символа, не только цифры)</label>
+        <input type="password" id="password" name="password" required minlength="4">
 
-        <button type="submit" class="btn-add" style="margin-top:20px;width:100%">Зарегистрироваться</button>
+        <button type="submit" class="btn btn-primary" style="margin-top:20px;width:100%">
+            Создать аккаунт
+        </button>
     </form>
 
-    <p style="text-align:center;margin-top:20px">
+    <p class="muted" style="margin-top:16px;text-align:center">
         Уже есть аккаунт? <a href="/login">Войти</a>
     </p>
 </div>
-
-</body>
-</html>
+{% endblock %}

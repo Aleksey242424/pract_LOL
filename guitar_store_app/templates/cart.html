@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Корзина — Guitar Store{% endblock %}
+
+{% block content %}
+<h1>Корзина</h1>
+
+{% if items %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Товар</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.name }}<br><span class="muted">{{ item.product.article }}</span></td>
+                <td>{{ "%.2f"|format(item.product.price) }} ₽</td>
+                <td>{{ item.quantity }}</td>
+                <td class="price">{{ "%.2f"|format(item.line_total) }} ₽</td>
+                <td style="text-align:right">
+                    <form method="post" action="/cart/remove/{{ item.product.id_product }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+        <span class="muted">Итого:</span>
+        <span class="price" style="font-size:22px">{{ "%.2f"|format(total) }} ₽</span>
+    </div>
+
+    <form method="post" action="/checkout" style="margin-top:20px">
+        <button type="submit" class="btn btn-primary" style="width:100%">
+            Оформить заказ
+        </button>
+    </form>
+</div>
+{% else %}
+<div class="card">
+    <p>Корзина пуста. <a href="/">Вернуться в каталог</a></p>
+</div>
+{% endif %}
+{% endblock %}

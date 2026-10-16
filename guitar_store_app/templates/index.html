@@ -1,191 +1,43 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Guitar Store</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Каталог — Guitar Store{% endblock %}
 
-<!-- ШАПКА -->
-<div class="user-bar">
-    <div>
-        🎸 <b>Guitar Store</b> |
-        Привет, <b>{{ user.fio }}</b>
-        <span class="role">{{ user.role }}</span>
-    </div>
-    <div>
-        {% if can_manage %}
-            <a href="/form">⚙️ Управление товарами</a>
+{% block content %}
+<h1>Гитары в наличии</h1>
+
+{% if products %}
+<div class="grid">
+    {% for p in products %}
+    {% set stock = stocks[p.id_product] %}
+    <div class="card">
+        <h2>{{ p.name }}</h2>
+        <p class="muted">Артикул: {{ p.article }}</p>
+        <p class="muted">
+            {{ p.manufacturer.name if p.manufacturer else "—" }} ·
+            {{ p.category.name if p.category else "—" }}
+        </p>
+        {% if p.strings_count %}
+            <p class="muted">Струн: {{ p.strings_count }}</p>
         {% endif %}
-        {% if is_admin %}
-            <a href="/orders">📦 Заказы</a>
-            <a href="/admin">👥 Пользователи</a>
-            <a href="/warehouses">🏬 Склады</a>
-        {% endif %}
-        <a href="/logout">Выйти</a>
-    </div>
-</div>
+        <p class="price" style="margin-top:12px">{{ "%.2f"|format(p.price) }} ₽</p>
+        <p class="muted">На складе: {{ stock }} шт.</p>
 
-{% if welcome %}
-<div class="status ok">Добро пожаловать, {{ user.fio }}! 🎸</div>
-{% endif %}
-
-<div class="container">
-
-    <!-- ЛЕВАЯ ПАНЕЛЬ: КАТАЛОГ ТОВАРОВ -->
-    <div class="left-panel">
-        <h2>Каталог гитар</h2>
-
-        <div id="catalog">
-            {% for p in products %}
-            <div class="product-card" data-id="{{ p.id_product }}" data-price="{{ p.price }}" data-name="{{ p.name }}">
-                <div class="product-info">
-                    <div class="product-name">{{ p.name }}</div>
-                    <div class="product-meta">
-                        {{ p.manufacturer.name if p.manufacturer else '—' }} ·
-                        {{ p.category.name if p.category else '—' }}
-                    </div>
-                    <div class="product-price">{{ p.price }} SEK</div>
-                </div>
-                <button class="btn-add-cart" onclick="addToCart({{ p.id_product }}, '{{ p.name|replace("'", "\\'") }}', {{ p.price }})">
-                    + В корзину
-                </button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- ПРАВАЯ ПАНЕЛЬ: КОРЗИНА И ЗАКАЗЫ -->
-    <div class="right-panel">
-        <h2>🛒 Корзина</h2>
-        <div id="cart">
-            <p id="cartEmpty">Корзина пуста</p>
-            <ul id="cartList"></ul>
-            <div id="cartTotal" style="display:none">
-                Итого: <b><span id="totalAmount">0</span> SEK</b>
-            </div>
-            <button type="button" class="btn-add" id="btnCheckout" style="display:none;width:100%;margin-top:10px" onclick="checkout()">
-                Оформить заказ
+        {% if stock > 0 %}
+        <form method="post" action="/cart/add/{{ p.id_product }}" style="margin-top:12px">
+            <label>Количество</label>
+            <input type="number" name="quantity" value="1" min="1" max="{{ stock }}">
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;width:100%">
+                В корзину
             </button>
-        </div>
-
-        <h2 style="margin-top:30px">📦 Мои заказы</h2>
-        {% if orders %}
-        <table>
-            <thead>
-                <tr><th>№</th><th>Дата</th><th>Статус</th></tr>
-            </thead>
-            <tbody>
-                {% for o in orders %}
-                <tr>
-                    <td>{{ o.order_number }}</td>
-                    <td>{{ o.order_date }}</td>
-                    <td>{{ o.status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        </form>
         {% else %}
-        <p style="color:#888">Заказов пока нет</p>
+            <button class="btn btn-ghost" disabled style="margin-top:12px;width:100%">
+                Нет в наличии
+            </button>
         {% endif %}
     </div>
-
+    {% endfor %}
 </div>
-
-<script>
-// ============================================================
-// КОРЗИНА (в localStorage)
-// ============================================================
-let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-function saveCart() {
-    localStorage.setItem('cart', JSON.stringify(cart));
-    renderCart();
-}
-
-function addToCart(id, name, price) {
-    const existing = cart.find(i => i.product_id === id);
-    if (existing) {
-        existing.quantity += 1;
-    } else {
-        cart.push({ product_id: id, name: name, price: price, quantity: 1 });
-    }
-    saveCart();
-    flash('Добавлено: ' + name);
-}
-
-function removeFromCart(id) {
-    cart = cart.filter(i => i.product_id !== id);
-    saveCart();
-}
-
-function renderCart() {
-    const list = document.getElementById('cartList');
-    const empty = document.getElementById('cartEmpty');
-    const total = document.getElementById('cartTotal');
-    const btn = document.getElementById('btnCheckout');
-
-    if (cart.length === 0) {
-        list.innerHTML = '';
-        empty.style.display = 'block';
-        total.style.display = 'none';
-        btn.style.display = 'none';
-        return;
-    }
-
-    empty.style.display = 'none';
-    total.style.display = 'block';
-    btn.style.display = 'block';
-
-    list.innerHTML = '';
-    let sum = 0;
-    cart.forEach(item => {
-        sum += item.price * item.quantity;
-        const li = document.createElement('li');
-        li.className = 'cart-item';
-        li.innerHTML = `
-            <span>${item.name} × ${item.quantity}</span>
-            <span>${item.price * item.quantity} SEK <button onclick="removeFromCart(${item.product_id})" class="btn-remove">✖</button></span>
-        `;
-        list.appendChild(li);
-    });
-    document.getElementById('totalAmount').textContent = sum;
-}
-
-async function checkout() {
-    if (cart.length === 0) return;
-    const payload = {
-        items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
-    };
-    const res = await fetch('/api/shop/checkout', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-        const data = await res.json();
-        cart = [];
-        saveCart();
-        alert(`Заказ ${data.order_number} оформлен! Сумма: ${data.total} SEK`);
-        location.reload();
-    } else {
-        const err = await res.json();
-        alert('Ошибка: ' + (err.detail || 'не удалось оформить заказ'));
-    }
-}
-
-function flash(msg) {
-    // Небольшая всплывашка
-    const div = document.createElement('div');
-    div.textContent = msg;
-    div.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:10px 16px;border-radius:6px;z-index:999;';
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 1500);
-}
-
-renderCart();
-</script>
-
-</body>
-</html>
+{% else %}
+<div class="card"><p>Товары ещё не добавлены.</p></div>
+{% endif %}
+{% endblock %}

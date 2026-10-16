@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Заказ №{{ order.id_order }} — Guitar Store{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Заказ №{{ order.order_number }} оформлен ✅</h1>
+    <p class="muted">Дата: {{ order.order_date.strftime("%d.%m.%Y") }}</p>
+    <p class="muted">Статус: {{ order.status }}</p>
+
+    <table style="margin-top:20px">
+        <thead>
+            <tr><th>Товар</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ products[item.product_id].name if item.product_id in products else "—" }}</td>
+                <td>{{ "%.2f"|format(item.price) }} ₽</td>
+                <td>{{ item.quantity }}</td>
+                <td class="price">{{ "%.2f"|format(item.price * item.quantity) }} ₽</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+        <span class="muted">Итого:</span>
+        <span class="price" style="font-size:22px">{{ "%.2f"|format(total) }} ₽</span>
+    </div>
+
+    <a href="/" class="btn btn-primary" style="margin-top:20px;display:inline-block">
+        Вернуться в каталог
+    </a>
+</div>
+{% endblock %}
